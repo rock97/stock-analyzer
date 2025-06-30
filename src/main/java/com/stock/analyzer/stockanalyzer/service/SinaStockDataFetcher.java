@@ -358,6 +358,7 @@ public class SinaStockDataFetcher {
                     return new StockCandlestickChart.StockData(stockCode, stockName, v.getDate(), v.getOpen(), v.getClose(), v.getHigh(), v.getLow());
                 }).collect(Collectors.toList());
 
+                TimeUnit.MINUTES.sleep(20);
                 synchronized (allStockDataList) {
                     allStockDataList.add(stockDataList);
                 }
