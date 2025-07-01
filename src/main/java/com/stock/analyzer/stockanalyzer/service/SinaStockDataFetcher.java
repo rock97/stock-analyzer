@@ -38,6 +38,9 @@ public class SinaStockDataFetcher {
 
     private static final String SINA_STOCK_HISTORY_API = "https://quotes.sina.cn/cn/api/jsonp_v2.php/var%%20_%s_day_data=%%20/CN_MarketDataService.getKLineData";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final StockCandlestickChart[] chartList = {new StockCandlestickChart(), new StockCandlestickChart(), new StockCandlestickChart(), new StockCandlestickChart(), new StockCandlestickChart()};
+
+
     // private static final  StockCandlestickChart chartGenerator = new StockCandlestickChart();
 
     /**
@@ -338,10 +341,9 @@ public class SinaStockDataFetcher {
         // 创建线程池，使用可用处理器数量作为线程数
         ExecutorService executor = Executors.newFixedThreadPool(2);
         List<Callable<Void>> tasks = new ArrayList<>();
-
         // 为每只股票创建并行任务
         for (int i = 0; i < stockInfos.size(); i++) {
-            int index = i; // 用于lambda表达式中的索引访问
+            final int index = i; // 用于lambda表达式中的索引访问
             StockInfo stockInfo = stockInfos.get(i);
             Callable<Void> task = () -> {
                 String stockCode = stockInfo.getCode();
@@ -357,7 +359,9 @@ public class SinaStockDataFetcher {
                 List<StockCandlestickChart.StockData> stockDataList = dataList.stream().map(v -> {
                     return new StockCandlestickChart.StockData(stockCode, stockName, v.getDate(), v.getOpen(), v.getClose(), v.getHigh(), v.getLow());
                 }).collect(Collectors.toList());
-
+                if (stockDataList.size() > 0) {
+                    genJPG(stockDataList, index);
+                }
                 TimeUnit.MILLISECONDS.sleep(50);
                 synchronized (allStockDataList) {
                     allStockDataList.add(stockDataList);
@@ -385,15 +389,7 @@ public class SinaStockDataFetcher {
             if (stockDataList.size() <= 1) {
                 continue;
             }
-            StringBuilder priceChangeSummary = new StringBuilder();
-            for (StockCandlestickChart.StockData data : stockDataList) {
-                priceChangeSummary.append(data.isUp() ? "1" : "0");
-            }
 
-            StockCandlestickChart.generateChart(stockDataList,
-                    "./file/chart-" + stockDataList.get(0).getStockCode() + "-" + priceChangeSummary + ".png",
-                    file -> {
-                    });
         }
         // 生成汇总Excel
 
@@ -408,6 +404,18 @@ public class SinaStockDataFetcher {
             }
         };
         runnable.run();*/
+    }
+
+    private static void genJPG(List<StockCandlestickChart.StockData> stockDataList, int i) {
+        StringBuilder priceChangeSummary = new StringBuilder();
+        for (StockCandlestickChart.StockData data : stockDataList) {
+            priceChangeSummary.append(data.isUp() ? "1" : "0");
+        }
+
+        chartList[0].generateChart(stockDataList,
+                "./file/chart-" + stockDataList.get(0).getStockCode() + "-" + priceChangeSummary + ".png",
+                file -> {
+                });
     }
 
     /**
