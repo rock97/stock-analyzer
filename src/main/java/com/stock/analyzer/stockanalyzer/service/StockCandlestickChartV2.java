@@ -14,6 +14,7 @@ import java.util.function.Consumer;
 
 import javax.imageio.ImageIO;
 
+import com.stock.analyzer.stockanalyzer.model.StockData;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
@@ -39,7 +40,7 @@ public class StockCandlestickChartV2 extends Application {
 
     // 任务队列
     private final BlockingQueue<ChartTask> taskQueue = new LinkedBlockingQueue<>();
-    private Stage mainStage = new Stage();
+    private Stage mainStage;
     private boolean isAppRunning = false;
     private final Object lock = new Object(); // 用于同步启动
 
@@ -62,69 +63,6 @@ public class StockCandlestickChartV2 extends Application {
     private ChartTask currentTask;
 
     // 股票数据类（公开，可从外部访问）
-    public static class StockData {
-        private final String stockCode;
-        private final String stockName;
-        private final String date;  // 日期
-        private final double open;  // 开盘价
-        private final double close; // 收盘价
-        private final double high;  // 最高价
-        private final double low;   // 最低价
-
-        public StockData(String stockCode, String stockName, String date, double open, double close, double high, double low) {
-            this.stockCode = stockCode;
-            this.stockName = stockName;
-            this.date = date;
-            this.open = open;
-            this.close = close;
-            this.high = high;
-            this.low = low;
-        }
-
-        public StockData(String date, double open, double close, double high, double low) {
-            this.stockCode = "";
-            this.stockName = "";
-            this.date = date;
-            this.open = open;
-            this.close = close;
-            this.high = high;
-            this.low = low;
-        }
-
-
-        public String getStockCode() {
-            return stockCode;
-        }
-
-        public String getDate() {
-            return date;
-        }
-
-        public double getOpen() {
-            return open;
-        }
-
-        public double getClose() {
-            return close;
-        }
-
-        public double getHigh() {
-            return high;
-        }
-
-        public double getLow() {
-            return low;
-        }
-
-        // 判断当天是上涨还是下跌
-        public boolean isUp() {
-            return close > open;
-        }
-
-        public String getStockName() {
-            return stockName;
-        }
-    }
 
     // 图表任务类（带完成标记）
     static class ChartTask {
@@ -181,6 +119,9 @@ public class StockCandlestickChartV2 extends Application {
 
     @Override
     public void start(Stage stageTeam) {
+        if(mainStage == null){
+            mainStage = stageTeam;
+        }
         mainStage.setTitle("股票K线图生成器");
         isAppRunning = true;
 

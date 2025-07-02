@@ -1,6 +1,7 @@
 package com.stock.analyzer.stockanalyzer.service;
 
 import com.stock.analyzer.stockanalyzer.model.StockDailyData;
+import com.stock.analyzer.stockanalyzer.model.StockData;
 import com.stock.analyzer.stockanalyzer.model.StockInfo;
 
 import java.io.BufferedReader;
@@ -38,7 +39,7 @@ public class SinaStockDataFetcher {
 
     private static final String SINA_STOCK_HISTORY_API = "https://quotes.sina.cn/cn/api/jsonp_v2.php/var%%20_%s_day_data=%%20/CN_MarketDataService.getKLineData";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    private static final StockCandlestickChart[] chartList = {new StockCandlestickChart(), new StockCandlestickChart(), new StockCandlestickChart(), new StockCandlestickChart(), new StockCandlestickChart()};
+    private static final StockCandlestickChartV2 chartV2 = new StockCandlestickChartV2();
 
 
     // private static final  StockCandlestickChart chartGenerator = new StockCandlestickChart();
@@ -336,7 +337,7 @@ public class SinaStockDataFetcher {
         // 所有股票数据保存到同一个汇总Excel
         String summaryExcelPath = "./file/" + dataStr + "_all_stocks_summary.xlsx";
         List<List<StockDailyData>> allDataLists = new ArrayList<>();
-        List<List<StockCandlestickChart.StockData>> allStockDataList = new ArrayList<>();
+        List<List<StockData>> allStockDataList = new ArrayList<>();
 
         // 创建线程池，使用可用处理器数量作为线程数
         ExecutorService executor = Executors.newFixedThreadPool(2);
@@ -356,8 +357,8 @@ public class SinaStockDataFetcher {
                     allDataLists.add(dataList);
                 }
 
-                List<StockCandlestickChart.StockData> stockDataList = dataList.stream().map(v -> {
-                    return new StockCandlestickChart.StockData(stockCode, stockName, v.getDate(), v.getOpen(), v.getClose(), v.getHigh(), v.getLow());
+                List<StockData> stockDataList = dataList.stream().map(v -> {
+                    return new StockData(stockCode, stockName, v.getDate(), v.getOpen(), v.getClose(), v.getHigh(), v.getLow());
                 }).collect(Collectors.toList());
                 if (stockDataList.size() > 0) {
                     genJPG(stockDataList, index);
@@ -385,7 +386,7 @@ public class SinaStockDataFetcher {
         }
 
 
-        for (List<StockCandlestickChart.StockData> stockDataList : allStockDataList) {
+        for (List<StockData> stockDataList : allStockDataList) {
             if (stockDataList.size() <= 1) {
                 continue;
             }
@@ -406,16 +407,18 @@ public class SinaStockDataFetcher {
         runnable.run();*/
     }
 
-    private static void genJPG(List<StockCandlestickChart.StockData> stockDataList, int i) {
-        StringBuilder priceChangeSummary = new StringBuilder();
-        for (StockCandlestickChart.StockData data : stockDataList) {
-            priceChangeSummary.append(data.isUp() ? "1" : "0");
-        }
+    private static void genJPG(List<StockData> stockDataList, int i) {
 
-        chartList[0].generateChart(stockDataList,
-                "./file/chart-" + stockDataList.get(0).getStockCode() + "-" + priceChangeSummary + ".png",
-                file -> {
-                });
+        StringBuilder priceChangeSummary = new StringBuilder();
+        Double min = Double.MAX_VALUE;
+        int zhangfu = 0;
+        for (StockData data : stockDataList) {
+            priceChangeSummary.append(data.isUp() ? "1" : "0");
+            min = Math.min(min, data.getClose());
+            zhangfu = Double.valueOf(((data.getClose() - min) / min) * 100).intValue();
+        }
+        String fileName = String.format("./file/%d-%s-%s.png", zhangfu, stockDataList.get(0).getStockCode(), priceChangeSummary);
+        StockCandlestickChart.generateChart(stockDataList, fileName);
     }
 
     /**
