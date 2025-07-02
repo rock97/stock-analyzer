@@ -41,8 +41,8 @@ public class SinaStockDataFetcher {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final StockCandlestickChartV2 chartV2 = new StockCandlestickChartV2();
 
-
-    // private static final  StockCandlestickChart chartGenerator = new StockCandlestickChart();
+    // private static final StockCandlestickChart chartGenerator = new
+    // StockCandlestickChart();
 
     /**
      * 获取股票历史日线数据
@@ -85,7 +85,7 @@ public class SinaStockDataFetcher {
                 "?symbol=" + sinaStockCode +
                 "&scale=240" + // 日K线
                 "&ma=5" + // 5日均线
-                "&datalen=60" + // 最大数据长度
+                "&datalen=90" + // 最大数据长度
                 "&from=" + formattedStartDate +
                 "&to=" + formattedEndDate;
     }
@@ -244,7 +244,7 @@ public class SinaStockDataFetcher {
      * @param append    是否追加到现有文件
      */
     public void saveToCSV(String stockCode, String stockName, List<StockDailyData> dataList, String filePath,
-                          boolean append) {
+            boolean append) {
         if (dataList == null || dataList.isEmpty()) {
             System.out.println("没有数据可保存");
             return;
@@ -329,10 +329,7 @@ public class SinaStockDataFetcher {
 
         // 设置日期范围
         LocalDate endDate = LocalDate.now(); // 今天
-        LocalDate startDate = endDate.minusMonths(1); // 3个月前
-
-        System.out.println("获取时间范围: " + startDate.format(DateTimeFormatter.ISO_LOCAL_DATE) +
-                " 至 " + endDate.format(DateTimeFormatter.ISO_LOCAL_DATE));
+        LocalDate startDate = endDate.minusMonths(3); // 3个月前
         String dataStr = endDate.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         // 所有股票数据保存到同一个汇总Excel
         String summaryExcelPath = "./file/" + dataStr + "_all_stocks_summary.xlsx";
@@ -352,13 +349,14 @@ public class SinaStockDataFetcher {
                 System.out.println("正在获取 " + index + " " + stockName + " 的日线数据...");
 
                 // 获取股票日线数据
-                List<StockDailyData> dataList = fetcher.fetchStockDailyData(stockCode, startDate, endDate);
+                List<StockDailyData> dataList = fetcher.fetchStockDailyData(stockCode, startDate, endDate.plusDays(1));
                 synchronized (allDataLists) {
                     allDataLists.add(dataList);
                 }
 
                 List<StockData> stockDataList = dataList.stream().map(v -> {
-                    return new StockData(stockCode, stockName, v.getDate(), v.getOpen(), v.getClose(), v.getHigh(), v.getLow());
+                    return new StockData(stockCode, stockName, v.getDate(), v.getOpen(), v.getClose(), v.getHigh(),
+                            v.getLow());
                 }).collect(Collectors.toList());
                 if (stockDataList.size() > 0) {
                     genJPG(stockDataList, index);
@@ -385,7 +383,6 @@ public class SinaStockDataFetcher {
             executor.shutdown();
         }
 
-
         for (List<StockData> stockDataList : allStockDataList) {
             if (stockDataList.size() <= 1) {
                 continue;
@@ -394,17 +391,21 @@ public class SinaStockDataFetcher {
         }
         // 生成汇总Excel
 
-        /*Runnable runnable = new Runnable() {
-            @Override
-            public void run() {
-                while (!StockCandlestickChart.checkCompleted()) {
-                    System.out.println("图片生成未完成");
-                }
-                fetcher.generateAllStocksSummaryExcel(stockInfos, allDataLists, summaryExcelPath);
-                System.out.println("所有图表生成完成");
-            }
-        };
-        runnable.run();*/
+        /*
+         * Runnable runnable = new Runnable() {
+         * 
+         * @Override
+         * public void run() {
+         * while (!StockCandlestickChart.checkCompleted()) {
+         * System.out.println("图片生成未完成");
+         * }
+         * fetcher.generateAllStocksSummaryExcel(stockInfos, allDataLists,
+         * summaryExcelPath);
+         * System.out.println("所有图表生成完成");
+         * }
+         * };
+         * runnable.run();
+         */
     }
 
     private static void genJPG(List<StockData> stockDataList, int i) {
@@ -417,7 +418,8 @@ public class SinaStockDataFetcher {
             min = Math.min(min, data.getClose());
             zhangfu = Double.valueOf(((data.getClose() - min) / min) * 100).intValue();
         }
-        String fileName = String.format("./file/%d-%s-%s.png", zhangfu, stockDataList.get(0).getStockCode(), priceChangeSummary);
+        String fileName = String.format("./file/%d-%s-%s.png", zhangfu, stockDataList.get(0).getStockCode(),
+                priceChangeSummary);
         StockCandlestickChart.generateChart(stockDataList, fileName);
     }
 
@@ -443,7 +445,6 @@ public class SinaStockDataFetcher {
         return list;
     }
 
-
     /**
      * 将股票数据和图表保存到Excel文件
      *
@@ -452,7 +453,8 @@ public class SinaStockDataFetcher {
      * @param dataList  股票日线数据列表
      * @param filePath  保存文件路径
      */
-    public void saveToExcelWithChart(String stockCode, String stockName, List<StockDailyData> dataList, String filePath) {
+    public void saveToExcelWithChart(String stockCode, String stockName, List<StockDailyData> dataList,
+            String filePath) {
         if (dataList == null || dataList.isEmpty()) {
             System.out.println("没有数据可保存");
             return;
@@ -465,7 +467,7 @@ public class SinaStockDataFetcher {
 
             // 创建表头
             Row headerRow = sheet.createRow(rowNum++);
-            String[] headers = {"日期", "开盘价", "最高价", "最低价", "收盘价", "成交量", "涨跌"};
+            String[] headers = { "日期", "开盘价", "最高价", "最低价", "收盘价", "成交量", "涨跌" };
             for (int i = 0; i < headers.length; i++) {
                 Cell cell = headerRow.createCell(i);
                 cell.setCellValue(headers[i]);
@@ -502,7 +504,8 @@ public class SinaStockDataFetcher {
             ChartUtils.saveChartAsPNG(new File(tempImagePath), chart, 800, 400);
 
             // 将图表插入Excel
-            int pictureIdx = workbook.addPicture(Files.readAllBytes(Paths.get(tempImagePath)), Workbook.PICTURE_TYPE_PNG);
+            int pictureIdx = workbook.addPicture(Files.readAllBytes(Paths.get(tempImagePath)),
+                    Workbook.PICTURE_TYPE_PNG);
             CreationHelper helper = workbook.getCreationHelper();
             Drawing drawing = sheet.createDrawingPatriarch();
             ClientAnchor anchor = helper.createClientAnchor();
@@ -538,15 +541,17 @@ public class SinaStockDataFetcher {
 
     /**
      * 生成包含股票代码、名称、涨跌汇总和图片的Excel文件
+     * 
      * @param stockCode 股票代码
      * @param stockName 股票名称
-     * @param dataList 股票日线数据列表
-     * @param filePath 保存文件路径
+     * @param dataList  股票日线数据列表
+     * @param filePath  保存文件路径
      */
     /**
      * 为单个股票添加汇总数据行到Excel工作表
      */
-    private void addStockSummaryRow(Sheet sheet, int rowNum, String stockCode, String stockName, List<StockDailyData> dataList) throws IOException {
+    private void addStockSummaryRow(Sheet sheet, int rowNum, String stockCode, String stockName,
+            List<StockDailyData> dataList) throws IOException {
         // 创建数据行
         Row dataRow = sheet.createRow(rowNum);
 
@@ -589,7 +594,8 @@ public class SinaStockDataFetcher {
     /**
      * 生成包含所有股票汇总数据的Excel文件
      */
-    public void generateAllStocksSummaryExcel(List<StockInfo> stockInfos, List<List<StockDailyData>> dataLists, String filePath) {
+    public void generateAllStocksSummaryExcel(List<StockInfo> stockInfos, List<List<StockDailyData>> dataLists,
+            String filePath) {
         if (stockInfos == null || stockInfos.isEmpty() || dataLists == null) {
             System.out.println("股票信息或数据列表为空或不匹配");
             return;
@@ -602,7 +608,7 @@ public class SinaStockDataFetcher {
 
             // 创建表头
             Row headerRow = sheet.createRow(rowNum++);
-            String[] headers = {"股票代码", "股票名称", "股票涨跌", "图片"};
+            String[] headers = { "股票代码", "股票名称", "股票涨跌", "图片" };
             for (int i = 0; i < headers.length; i++) {
                 Cell cell = headerRow.createCell(i);
                 cell.setCellValue(headers[i]);
