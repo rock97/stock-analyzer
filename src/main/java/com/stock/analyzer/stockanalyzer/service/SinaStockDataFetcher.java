@@ -346,7 +346,7 @@ public class SinaStockDataFetcher {
             Callable<Void> task = () -> {
                 String stockCode = stockInfo.getCode();
                 String stockName = stockInfo.getName();
-                System.out.println("正在获取 " + index + " " + stockName + " 的日线数据...");
+                //System.out.println("正在获取 " + index + " " + stockName + " 的日线数据...");
 
                 // 获取股票日线数据
                 List<StockDailyData> dataList = fetcher.fetchStockDailyData(stockCode, startDate, endDate.plusDays(1));
@@ -389,23 +389,6 @@ public class SinaStockDataFetcher {
             }
 
         }
-        // 生成汇总Excel
-
-        /*
-         * Runnable runnable = new Runnable() {
-         * 
-         * @Override
-         * public void run() {
-         * while (!StockCandlestickChart.checkCompleted()) {
-         * System.out.println("图片生成未完成");
-         * }
-         * fetcher.generateAllStocksSummaryExcel(stockInfos, allDataLists,
-         * summaryExcelPath);
-         * System.out.println("所有图表生成完成");
-         * }
-         * };
-         * runnable.run();
-         */
     }
 
     private static void genJPG(List<StockData> stockDataList, int i) {
@@ -418,9 +401,10 @@ public class SinaStockDataFetcher {
             min = Math.min(min, data.getClose());
             zhangfu = Double.valueOf(((data.getClose() - min) / min) * 100).intValue();
         }
-        String fileName = String.format("./file/%d-%s-%s.png", zhangfu, stockDataList.get(0).getStockCode(),
+        String fileName = String.format("./file/%d-%s-%s-%s.png", zhangfu,stockDataList.get(0).getStockName(), stockDataList.get(0).getStockCode(),
                 priceChangeSummary);
-        StockCandlestickChart.generateChart(stockDataList, fileName);
+        System.out.println(fileName);
+        //StockCandlestickChart.generateChart(stockDataList, fileName);
     }
 
     /**
